@@ -3,9 +3,11 @@ import os
 from django.conf import settings
 from pprint import pprint
 
+
 class Request:
 
     def __init__(self, request, fields, media):
+        pprint(request.data)
         self._request = request
         self._fields = fields
         self._media = media
@@ -47,7 +49,6 @@ class PostRequest(Request):
 class UploadFileRequest(PostRequest):
 
     def __init__(self, request):
-
         media = ['file']
         super(UploadFileRequest, self).__init__(request=request, media=media)
 
@@ -55,8 +56,7 @@ class UploadFileRequest(PostRequest):
 class ClassificationRequest(PostRequest):
 
     def __init__(self, request):
-        pprint(request.data)
-        fields = ['model', 'filename', 'section', 'severity']
+        fields = ['model', 'filepath']
         super(ClassificationRequest, self).__init__(request=request, fields=fields)
 
     def _validate(self):
@@ -66,23 +66,7 @@ class ClassificationRequest(PostRequest):
                                            'XGBoost']:
             raise ValueError(f"model {validated_data['model']} is invalid.")
 
-        if validated_data['section'] not in ['original', 'zeros', 'random', 'junk', 'benign']:
-            raise ValueError(f"section {validated_data['section']} is invalid.")
-
-        if validated_data['section'] != 'original' and validated_data['severity'] not in ['0.01', '0.10', '0.25']:
-            raise ValueError(f"severity {validated_data['severity']} is invalid.")
-
-        data = {
-            'model': validated_data['model'],
-            'filepath': os.path.join(settings.MEDIA_ROOT, 'workspace', validated_data['section'],
-                                     validated_data['filename'])
-            if validated_data['section'] == 'original' else os.path.join(settings.MEDIA_ROOT, 'workspace',
-                                                                         validated_data['section'],
-                                                                         validated_data['severity'],
-                                                                         validated_data['filename'])
-        }
-
-        return data
+        return validated_data
 
 
 class ObfuscationRequest(PostRequest):
@@ -92,19 +76,25 @@ class ObfuscationRequest(PostRequest):
         super(ObfuscationRequest, self).__init__(request=request, fields=fields)
 
     def _validate(self):
-        data = PostRequest._validate(self)
-        data['dst'] = os.path.join(settings.MEDIA_ROOT, 'workspace', data['obfuscation'], data['severity'])
+        validated_data = PostRequest._validate(self)
 
-        if not os.path.exists(data['dst']):
-            os.makedirs(data['dst'])
+        if validated_data['obfuscation'] not in ['zeros', 'random', 'junk', 'benign']:
+            raise ValueError(f"obfuscation {validated_data['obfuscation']} is invalid.")
 
-        if data['obfuscation'] not in ['zeros', 'random', 'junk', 'benign']:
-            raise ValueError(f"obfuscation {data['obfuscation']} is invalid.")
+        if validated_data['severity'] not in ['0.01', '0.10', '0.25']:
+            raise ValueError(f"severity {validated_data['severity']} is invalid.")
 
-        if data['severity'] not in ['0.01', '0.1', '0.25']:
-            raise ValueError(f"severity {data['severity']} is invalid.")
+        validated_data['dst'] = os.path.join(
+            settings.MEDIA_ROOT,
+            'workspace',
+            validated_data['obfuscation'],
+            validated_data['severity']
+        )
 
-        return data
+        if not os.path.exists(validated_data['dst']):
+            os.makedirs(validated_data['dst'])
+
+        return validated_data
 
 
 class GetRequest(Request):

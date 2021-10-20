@@ -98,6 +98,7 @@ def get_uploaded_files(request):
                             'id': utils.get_random_id(),
                             'section': obfuscation,
                             'severity': severity,
+                            'filepath': os.path.join(path, file),
                         })
         path = os.path.join(settings.MEDIA_ROOT, 'workspace', 'original')
         if os.path.exists(path):
@@ -108,6 +109,7 @@ def get_uploaded_files(request):
                     'id': utils.get_random_id(),
                     'section': 'original',
                     'severity': None,
+                    'filepath': os.path.join(path, file)
                 })
         pprint(data)
         return Response(data=data, status=status.HTTP_200_OK)
