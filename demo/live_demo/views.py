@@ -86,16 +86,29 @@ def obfuscate(request):
 @api_view(['GET'])
 def get_uploaded_files(request):
     try:
-        data = {}
+        data = []
         for obfuscation in ['benign', 'junk', 'random', 'zeros']:
             for severity in ['0.01', '0.10', '0.25']:
                 path = os.path.join(settings.MEDIA_ROOT, 'workspace', obfuscation, severity)
-                if os.path.exists(path) and len(os.listdir(path)) > 0:
-                    if obfuscation not in data:
-                        data[obfuscation] = {}
-                    data[obfuscation][severity] = os.listdir(path)
-        if len(os.listdir(os.path.join(settings.MEDIA_ROOT, 'workspace', 'original'))) > 0:
-            data['original'] = os.listdir(os.path.join(settings.MEDIA_ROOT, 'workspace', 'original'))
+                if os.path.exists(path):
+                    files = os.listdir(path)
+                    for file in files:
+                        data.append({
+                            'filename': file,
+                            'id': utils.get_random_id(),
+                            'section': obfuscation,
+                            'severity': severity,
+                        })
+        path = os.path.join(settings.MEDIA_ROOT, 'workspace', 'original')
+        if os.path.exists(path):
+            files = os.listdir(path)
+            for file in files:
+                data.append({
+                    'filename': file,
+                    'id': utils.get_random_id(),
+                    'section': 'original',
+                    'severity': None,
+                })
         pprint(data)
         return Response(data=data, status=status.HTTP_200_OK)
     except Exception as e:

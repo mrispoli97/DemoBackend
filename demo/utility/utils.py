@@ -1,6 +1,7 @@
 import pickle as pkl
 import json
 from datetime import datetime
+import uuid
 
 
 def load_pickle(filepath):
@@ -31,3 +32,7 @@ def get_time():
     now = datetime.now()
     dt_string = now.strftime("%d_%m_%Y-%H_%M_%S")
     return dt_string
+
+
+def get_random_id():
+    return str(uuid.uuid4())
